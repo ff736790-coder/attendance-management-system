@@ -6,6 +6,9 @@
 [![TailwindCSS](https://img.shields.io/badge/Frontend-TailwindCSS-38bdf8.svg)](https://tailwindcss.com/)
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ed.svg)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ff736790-coder/attendance-management-system)
+
+**GitHub Repository:** [https://github.com/ff736790-coder/attendance-management-system](https://github.com/ff736790-coder/attendance-management-system)
 
 A production-grade, full-stack **AI-Powered Attendance Management System** designed for colleges, universities, and enterprise academic departments. Features strict Role-Based Access Control (Admin, Faculty, Student), Aiven Cloud MySQL connectivity with TLS encryption, automated low-attendance alerts (<75%), RFC-4180 CSV export, audit logging, and an intelligent AI analytics engine with zero-downtime deterministic fallback.
 

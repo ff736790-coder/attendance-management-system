@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI-Powered Attendance Management System with Role-Based Access Control, Cloud MySQL, Analytics, and Fallback AI Features">
+  <title>AuraAMS - AI-Powered Attendance Management System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#151f32',
+              950: '#070d18'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+
+  <!-- ================= AUTHENTICATION LAYOUT ================= -->
+  <div id="auth-layout" class="min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950">
+    <div class="w-full max-w-md">
+      <!-- Brand Logo -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-3xl mb-3 shadow-xl shadow-indigo-600/20">
+          <span>🎓</span>
+        </div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight">AuraAMS Portal</h1>
+        <p class="text-xs text-slate-400 mt-1">AI-Powered Institutional Attendance System</p>
+      </div>
+
+      <!-- Login Card -->
+      <div class="glass-panel p-8 rounded-3xl border border-slate-700/80 shadow-2xl backdrop-blur-xl">
+        <h2 class="text-lg font-bold text-white mb-2">Sign in to your account</h2>
+        <p class="text-xs text-slate-400 mb-6">Select your portal role or enter your institutional credentials.</p>
+
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5" for="login-email">Email Address</label>
+            <input type="email" id="login-email" required
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+              placeholder="e.g. admin@college.edu" value="admin@college.edu">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider" for="login-password">Password</label>
+              <span class="text-[11px] text-slate-400">Default: Password@123</span>
+            </div>
+            <input type="password" id="login-password" required
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+              placeholder="••••••••" value="Password@123">
+          </div>
+
+          <button type="submit"
+            class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center mt-2">
+            Sign In to Portal
+          </button>
+        </form>
+
+        <!-- One-Click Quick Demo Accounts -->
+        <div class="mt-6 pt-5 border-t border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 text-center">
+            ⚡ Fast Demo Switcher (1-Click Fill)
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button data-demo-account="admin" class="py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-rose-300 font-semibold text-left transition">
+              🛡️ Admin
+            </button>
+            <button data-demo-account="faculty" class="py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-indigo-300 font-semibold text-left transition">
+              👨‍🏫 Faculty
+            </button>
+            <button data-demo-account="student-normal" class="py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-emerald-300 font-semibold text-left transition">
+              👨‍🎓 Student (High)
+            </button>
+            <button data-demo-account="student-low" class="py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-amber-300 font-semibold text-left transition">
+              ⚠️ Student (&lt;75%)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APPLICATION LAYOUT ================= -->
+  <div id="app-layout" class="hidden min-h-screen flex flex-col md:flex-row">
+    
+    <!-- Sidebar Navigation -->
+    <aside id="app-sidebar"
+      class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0 backdrop-blur-xl">
+      <!-- Sidebar Header -->
+      <div class="p-6 border-b border-slate-800/80 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-600/30">
+          <span>🎓</span>
+        </div>
+        <div>
+          <div class="text-base font-extrabold text-white tracking-tight flex items-center gap-1.5">
+            AuraAMS <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-mono">v1.0 • AI-Enabled</div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        <!-- Admin Link -->
+        <a href="#admin-dashboard" class="nav-item nav-role-admin flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">🛡️</span>
+          <span>Admin Portal</span>
+        </a>
+
+        <!-- Faculty Link -->
+        <a href="#faculty-dashboard" class="nav-item nav-role-faculty flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">📋</span>
+          <span>Sessions & Marking</span>
+        </a>
+
+        <!-- Student Link -->
+        <a href="#student-dashboard" class="nav-item nav-role-student flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">👨‍🎓</span>
+          <span>My Attendance</span>
+        </a>
+
+        <!-- Reports (Admin + Faculty) -->
+        <a href="#reports" class="nav-item nav-role-faculty flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">📊</span>
+          <span>Analytics & Reports</span>
+        </a>
+
+        <!-- AI Insights (All roles) -->
+        <a href="#ai-insights" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">✨</span>
+          <span class="flex-1">AI Intelligence</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI</span>
+        </a>
+
+        <!-- Settings (All roles) -->
+        <a href="#settings" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800">
+          <span class="text-lg">⚙️</span>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer User Status -->
+      <div class="p-4 border-t border-slate-800/80 bg-slate-950/40">
+        <div class="flex items-center gap-3">
+          <div id="header-user-avatar" class="w-9 h-9 rounded-xl bg-indigo-600/40 border border-indigo-500/50 flex items-center justify-center font-bold text-white text-sm">
+            U
+          </div>
+          <div class="flex-1 min-w-0">
+            <div id="header-user-name" class="text-xs font-bold text-white truncate">User Name</div>
+            <div id="header-user-role" class="text-[10px] text-indigo-400 font-mono uppercase tracking-wider truncate">ROLE</div>
+          </div>
+          <button id="logout-btn" title="Sign out" class="text-slate-400 hover:text-rose-400 p-1.5 transition">
+            🚪
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 md:pl-64 flex flex-col min-h-screen">
+      <!-- Top Navbar -->
+      <header class="h-16 bg-slate-900/80 border-b border-slate-800/80 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between backdrop-blur-xl">
+        <div class="flex items-center gap-3">
+          <button id="mobile-sidebar-toggle" class="md:hidden p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
+            ☰
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700/80 text-slate-300 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Aiven Cloud Ready
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 relative">
+          <!-- Notification Bell -->
+          <div class="relative">
+            <button id="btn-notifications-toggle" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition relative">
+              <span>🔔</span>
+              <span id="notification-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+            </button>
+            <!-- Dropdown -->
+            <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 rounded-2xl glass-panel border border-slate-700 shadow-2xl z-50 overflow-hidden">
+              <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/80">
+                <span class="text-xs font-bold text-white uppercase tracking-wider">Notifications</span>
+                <button onclick="api.markNotificationRead('all').then(fetchNotifications)" class="text-[11px] text-indigo-400 hover:underline">Mark all read</button>
+              </div>
+              <div id="notification-list" class="max-h-80 overflow-y-auto divide-y divide-slate-800">
+                <div class="p-4 text-xs text-slate-400 text-center">Loading notifications...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Container -->
+      <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
+
+        <!-- ================= VIEW: ADMIN DASHBOARD ================= -->
+        <section id="view-admin-dashboard" class="app-view hidden">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white tracking-tight">Institutional Administration</h2>
+              <p class="text-xs text-slate-400 mt-1">Overview of courses, enrolled students, faculty roster, and compliance thresholds.</p>
+            </div>
+            <button id="btn-open-create-user" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+              <span>+</span> Add New User
+            </button>
+          </div>
+
+          <!-- Top Metric Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Enrolled Students</div>
+              <div id="admin-stat-students" class="text-3xl font-extrabold text-white">0</div>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Faculty Members</div>
+              <div id="admin-stat-faculty" class="text-3xl font-extrabold text-indigo-400">0</div>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Active Courses</div>
+              <div id="admin-stat-courses" class="text-3xl font-extrabold text-emerald-400">0</div>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Compliance Threshold</div>
+              <div id="admin-stat-threshold" class="text-3xl font-extrabold text-amber-400">75%</div>
+            </div>
+          </div>
+
+          <!-- Distribution Chart & System Settings Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Chart Card -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-700/60 lg:col-span-1 flex flex-col">
+              <h3 class="text-sm font-bold text-white mb-3">Academic Roster Composition</h3>
+              <div class="flex-1 relative min-h-[200px]">
+                <canvas id="admin-distribution-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- System Settings Card -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-700/60 lg:col-span-2">
+              <h3 class="text-sm font-bold text-white mb-1">Institutional Attendance Parameters</h3>
+              <p class="text-xs text-slate-400 mb-4">Adjust the mandatory threshold percentage and credit weights.</p>
+              
+              <form id="admin-settings-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-slate-300 font-semibold mb-1" for="setting-threshold">Low-Attendance Alert Threshold (%)</label>
+                  <input type="number" id="setting-threshold" min="50" max="100" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+                  <span class="text-[11px] text-slate-500">Students below this rate receive automated alerts.</span>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-300 font-semibold mb-1" for="setting-late-weight">Late Attendance Credit Weight (0.0 - 1.0)</label>
+                  <input type="number" id="setting-late-weight" step="0.1" min="0" max="1" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+                  <span class="text-[11px] text-slate-500">0.5 means late attendance counts as 1/2 lecture.</span>
+                </div>
+                <div class="sm:col-span-2 pt-2">
+                  <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition">
+                    Save Institutional Parameters
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Academic Courses List -->
+          <div class="mb-8">
+            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+              <span>📚</span> Registered Degree Programs & Courses
+            </h3>
+            <div id="admin-courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Courses populated via admin.js -->
+            </div>
+          </div>
+
+          <!-- Users Table -->
+          <div class="glass-panel rounded-2xl border border-slate-700/60 overflow-hidden mb-8">
+            <div class="p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider">User Directory</h3>
+              <div class="flex items-center gap-2 text-xs">
+                <button onclick="renderAdminUsersTable('')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">All</button>
+                <button onclick="renderAdminUsersTable('student')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Students</button>
+                <button onclick="renderAdminUsersTable('faculty')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Faculty</button>
+                <button onclick="renderAdminUsersTable('admin')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white">Admins</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead class="bg-slate-800/60 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                  <tr>
+                    <th class="py-3 px-4">Name</th>
+                    <th class="py-3 px-4">Email</th>
+                    <th class="py-3 px-4">Role</th>
+                    <th class="py-3 px-4">Phone</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4">Registered</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body" class="divide-y divide-slate-800 text-sm">
+                  <!-- Populated via admin.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Audit Logs Section -->
+          <div class="glass-panel rounded-2xl border border-slate-700/60 overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>🔒</span> Security & Modification Audit Trail
+              </h3>
+              <span class="text-xs text-slate-400">Read-Only Immutable Log</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead class="bg-slate-800/60 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                  <tr>
+                    <th class="py-2.5 px-3">Timestamp</th>
+                    <th class="py-2.5 px-3">Action</th>
+                    <th class="py-2.5 px-3">Operator</th>
+                    <th class="py-2.5 px-3">Entity</th>
+                    <th class="py-2.5 px-3">Audit Details</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-audit-table-body" class="divide-y divide-slate-800/80">
+                  <!-- Populated via admin.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: FACULTY DASHBOARD ================= -->
+        <section id="view-faculty-dashboard" class="app-view hidden">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div>
+              <h2 class="text-2xl font-extrabold text-white tracking-tight">Faculty Attendance Manager</h2>
+              <p class="text-xs text-slate-400 mt-1">Conducted lecture sessions, quick attendance entry, and classroom analytics.</p>
+            </div>
+            <button id="btn-open-create-session" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+              <span>+</span> Create New Session
+            </button>
+          </div>
+
+          <!-- Faculty KPI Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-5 mb-8">
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Conducted Sessions</div>
+              <div id="faculty-stat-sessions" class="text-3xl font-extrabold text-white">0</div>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Assigned Subjects</div>
+              <div id="faculty-stat-subjects" class="text-3xl font-extrabold text-indigo-400">0</div>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl border border-slate-700/60 col-span-2 md:col-span-1">
+              <div class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Active Term</div>
+              <div class="text-xl font-bold text-emerald-400 mt-1">2026-Spring</div>
+            </div>
+          </div>
+
+          <!-- Sessions Table -->
+          <div class="glass-panel rounded-2xl border border-slate-700/60 overflow-hidden mb-8">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white uppercase tracking-wider">Attendance Sessions History</h3>
+              <span class="text-xs text-slate-400">Click "Mark / Edit" to record attendance</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead class="bg-slate-800/60 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                  <tr>
+                    <th class="py-3 px-4">Date</th>
+                    <th class="py-3 px-4">Subject</th>
+                    <th class="py-3 px-4">Topic Covered</th>
+                    <th class="py-3 px-4">Schedule</th>
+                    <th class="py-3 px-4">Summary (P/L/A)</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="faculty-sessions-table-body" class="divide-y divide-slate-800 text-sm">
+                  <!-- Populated via faculty.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: STUDENT DASHBOARD ================= -->
+        <section id="view-student-dashboard" class="app-view hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-extrabold text-white tracking-tight">Student Attendance Portal</h2>
+            <p class="text-xs text-slate-400 mt-1">Track your daily and subject-wise attendance status in real time.</p>
+          </div>
+
+          <div id="student-dashboard-content">
+            <!-- Populated via student.js -->
+          </div>
+        </section>
+
+        <!-- ================= VIEW: REPORTS & ANALYTICS ================= -->
+        <section id="view-reports" class="app-view hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-extrabold text-white tracking-tight">Attendance Analytics & Reports</h2>
+            <p class="text-xs text-slate-400 mt-1">Class-wise and subject-wise attendance sheets with export functionality.</p>
+          </div>
+
+          <!-- Subject Picker for Report -->
+          <div class="glass-panel p-5 rounded-2xl border border-slate-700/60 mb-6 flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[240px]">
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1" for="faculty-report-subject-select">Select Subject</label>
+              <select id="faculty-report-subject-select" onchange="loadFacultyReport(this.value)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <!-- Populated via faculty.js -->
+              </select>
+            </div>
+          </div>
+
+          <div id="faculty-report-container">
+            <div class="text-center py-12 text-slate-400">Choose a subject from the selector above to display attendance analytics.</div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: AI INSIGHTS ================= -->
+        <section id="view-ai-insights" class="app-view hidden">
+          <div class="mb-8">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold mb-2">
+              <span>✨</span> Intelligent Academic Intelligence
+            </div>
+            <h2 class="text-2xl font-extrabold text-white tracking-tight">AI Insights & Natural Language Analytics</h2>
+            <p class="text-xs text-slate-400 mt-1">Automated trend summarization, student recovery plans, and controlled Q&A assistant.</p>
+          </div>
+
+          <!-- Feature 1: Class Summarizer -->
+          <div class="glass-panel p-6 rounded-3xl border border-slate-700/60 mb-8">
+            <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+              <span>📊</span> AI Attendance Report Summarizer
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Generates an executive briefing of attendance health, identified risk factors, and pedagogical tips.</p>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <select id="ai-subject-select" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500 min-w-[260px]">
+                <option value="">-- Choose Subject --</option>
+              </select>
+              <button onclick="requestAiClassSummary()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5">
+                <span>✨</span> Generate AI Briefing
+              </button>
+            </div>
+
+            <div id="ai-class-summary-result" class="hidden mt-4"></div>
+          </div>
+
+          <!-- Feature 2: Personalized Student Recovery Guidance -->
+          <div class="glass-panel p-6 rounded-3xl border border-slate-700/60 mb-8">
+            <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+              <span>🎯</span> Personalized Attendance Improvement Guidance
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Calculates exact mathematical targets of consecutive classes required to reach 75%.</p>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <select id="ai-student-select" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500 min-w-[260px]">
+                <option value="">-- Choose Student --</option>
+              </select>
+              <button onclick="requestStudentAiAdvice()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5">
+                <span>✨</span> Formulate Recovery Plan
+              </button>
+            </div>
+
+            <div id="ai-student-advice-result" class="hidden mt-4"></div>
+          </div>
+
+          <!-- Feature 3: Controlled Assistant Q&A -->
+          <div class="glass-panel p-6 rounded-3xl border border-slate-700/60">
+            <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+              <span>💬</span> Institutional Attendance AI Assistant
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Ask natural-language questions regarding institutional attendance patterns and at-risk rates.</p>
+
+            <!-- Quick Query Prompt Chips -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button data-chat-prompt="What is the overall average attendance across all courses?" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 transition">
+                "What is the overall average attendance?"
+              </button>
+              <button data-chat-prompt="How many students are currently below the 75% threshold?" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 transition">
+                "How many students are below 75%?"
+              </button>
+              <button data-chat-prompt="How many total attendance sessions have been conducted?" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 transition">
+                "How many total sessions have been conducted?"
+              </button>
+            </div>
+
+            <!-- Messages Window -->
+            <div id="ai-chat-messages" class="h-64 overflow-y-auto space-y-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 mb-4">
+              <div class="flex justify-start">
+                <div class="glass-panel border border-slate-800 text-slate-300 rounded-2xl rounded-bl-none px-4 py-3 text-sm max-w-lg">
+                  👋 Hello! I am your Institutional Attendance Assistant. You can ask me questions about aggregate attendance rates, defaulter student counts, and course performance.
+                </div>
+              </div>
+            </div>
+
+            <!-- Input Form -->
+            <form id="ai-chat-form" class="flex gap-2">
+              <input type="text" id="ai-chat-input" placeholder="Ask a question about institutional attendance..."
+                class="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30">
+                Ask AI
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: SETTINGS & PROFILE ================= -->
+        <section id="view-settings" class="app-view hidden">
+          <div class="mb-8">
+            <h2 class="text-2xl font-extrabold text-white tracking-tight">Account & Portal Settings</h2>
+            <p class="text-xs text-slate-400 mt-1">Manage security credentials and view connection diagnostics.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Password Change Card -->
+            <div class="glass-panel p-6 rounded-3xl border border-slate-700/60">
+              <h3 class="text-base font-bold text-white mb-4">Change Password</h3>
+              <form id="form-change-password" onsubmit="event.preventDefault(); api.changePassword(document.getElementById('pwd-current').value, document.getElementById('pwd-new').value).then(() => { showToast('Password changed successfully!', 'success'); this.reset(); }).catch(e => showToast(e.message, 'error'))" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1" for="pwd-current">Current Password</label>
+                  <input type="password" id="pwd-current" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1" for="pwd-new">New Password (Min 6 chars)</label>
+                  <input type="password" id="pwd-new" minlength="6" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition">
+                  Update Password
+                </button>
+              </form>
+            </div>
+
+            <!-- Cloud Database & Architecture Info -->
+            <div class="glass-panel p-6 rounded-3xl border border-slate-700/60 flex flex-col justify-between">
+              <div>
+                <h3 class="text-base font-bold text-white mb-2">Cloud Infrastructure Status</h3>
+                <p class="text-xs text-slate-400 mb-4">System metadata and connectivity details.</p>
+                <div class="space-y-2 text-xs font-mono">
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Database Driver:</span>
+                    <span class="text-indigo-300">mysql2 (Parameterized)</span>
+                  </div>
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Cloud Target:</span>
+                    <span class="text-emerald-400">Aiven Cloud MySQL</span>
+                  </div>
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">TLS Encryption:</span>
+                    <span class="text-emerald-400">Enforced in Production</span>
+                  </div>
+                  <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Duplicate Check:</span>
+                    <span class="text-indigo-300">uq_session_student</span>
+                  </div>
+                  <div class="flex justify-between py-1">
+                    <span class="text-slate-400">AI Engine Fallback:</span>
+                    <span class="text-amber-400">Active &amp; Tested</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pt-4 text-[11px] text-slate-500">
+                AuraAMS • College Production-Style Engineering Project
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MARK ATTENDANCE SHEET ================= -->
+  <div id="modal-mark-attendance" class="hidden fixed inset-y-0 inset-x-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-3xl border border-slate-700 flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+        <div>
+          <h3 id="mark-sheet-title" class="text-base font-bold text-white">Record Session Attendance</h3>
+          <p class="text-xs text-slate-400">Toggle Present, Late, or Absent status for each student.</p>
+        </div>
+        <button onclick="document.getElementById('modal-mark-attendance').classList.add('hidden')" class="p-2 text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <!-- Quick Action Toolbar -->
+      <div class="px-5 py-3 border-b border-slate-800/80 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-semibold">Bulk Actions:</span>
+          <button onclick="markAllStudents('present')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold transition">
+            ✓ All Present
+          </button>
+          <button onclick="markAllStudents('absent')" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-semibold transition">
+            ✕ All Absent
+          </button>
+        </div>
+        <span class="text-slate-500">Duplicate protection enabled (uq_session_student)</span>
+      </div>
+
+      <!-- Students Table Body -->
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left">
+          <thead class="bg-slate-900/80 sticky top-0 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-4">Roll No</th>
+              <th class="py-3 px-4">Student Name</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Notes</th>
+            </tr>
+          </thead>
+          <tbody id="mark-sheet-table-body" class="divide-y divide-slate-800 text-sm">
+            <!-- Populated via faculty.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex justify-end gap-3">
+        <button onclick="document.getElementById('modal-mark-attendance').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          Cancel
+        </button>
+        <button id="btn-save-attendance-sheet" onclick="submitMarkAttendanceSheet()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition">
+          Save Attendance Records
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CREATE SESSION ================= -->
+  <div id="modal-create-session" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-3xl border border-slate-700 p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Create New Attendance Session</h3>
+        <button id="btn-close-create-session" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="form-create-session" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-subject">Subject</label>
+          <select id="create-session-subject" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <!-- Populated via faculty.js -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-date">Session Date</label>
+          <input type="date" id="create-session-date" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-start">Start Time</label>
+            <input type="time" id="create-session-start" required value="09:00" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-end">End Time</label>
+            <input type="time" id="create-session-end" required value="10:00" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-topic">Lecture Topic / Module</label>
+          <input type="text" id="create-session-topic" placeholder="e.g. Relational Normalization & BCNF" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-session-remarks">Remarks (Optional)</label>
+          <input type="text" id="create-session-remarks" placeholder="e.g. Regular theory lecture" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-3">
+          <button type="button" onclick="document.getElementById('modal-create-session').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">Create & Mark Attendance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CREATE USER ================= -->
+  <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-3xl border border-slate-700 p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white">Create New Institutional User</h3>
+        <button id="btn-close-create-user" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="form-create-user" class="space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-firstname">First Name</label>
+            <input type="text" id="create-user-firstname" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-lastname">Last Name</label>
+            <input type="text" id="create-user-lastname" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-email">Email Address</label>
+          <input type="email" id="create-user-email" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-password">Password</label>
+            <input type="password" id="create-user-password" minlength="6" required value="Password@123" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-phone">Phone</label>
+            <input type="text" id="create-user-phone" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-user-role">Role</label>
+          <select id="create-user-role" required class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <!-- Student-specific fields -->
+        <div id="create-user-student-fields" class="space-y-3 pt-2 border-t border-slate-800">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-student-roll">Roll Number</label>
+              <input type="text" id="create-student-roll" placeholder="e.g. 2024CS009" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-student-sem">Semester</label>
+              <input type="number" id="create-student-sem" value="4" min="1" max="8" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-student-course">Course ID</label>
+            <input type="number" id="create-student-course" value="1" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Faculty-specific fields -->
+        <div id="create-user-faculty-fields" class="hidden space-y-3 pt-2 border-t border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-faculty-empid">Employee ID</label>
+            <input type="text" id="create-faculty-empid" placeholder="e.g. EMP-CSE-105" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1" for="create-faculty-dept">Department</label>
+            <input type="text" id="create-faculty-dept" value="Computer Science" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-3">
+          <button type="button" onclick="document.getElementById('modal-create-user').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast notification container -->
+  <div id="toast-container"></div>
+
+  <!-- App Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/faculty.js"></script>
+  <script src="js/student.js"></script>
+  <script src="js/ai-insights.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

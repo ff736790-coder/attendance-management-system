@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Attendance Management System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="container">
+<h1>Attendance Management System</h1>
+<p>Record and manage student attendance.</p>
+<form id="form">
+<input id="name" placeholder="Student name" required>
+<input id="roll" placeholder="Roll number" required>
+<input id="date" type="date" required>
+<select id="status"><option>Present</option><option>Absent</option></select>
+<button type="submit">Save Attendance</button>
+</form>
+<p id="message"></p>
+<h2>Attendance Records</h2>
+<button id="refresh" type="button">Refresh</button>
+<div class="table-wrap"><table>
+<thead><tr><th>Name</th><th>Roll No.</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+<tbody id="records"></tbody>
+</table></div>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

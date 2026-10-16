@@ -1,52 +1,5 @@
-<<<<<<< HEAD
-target/
+﻿target/
 data/
-.idea/
 .vscode/
+.idea/
 *.class
-=======
-# Dependencies
-node_modules/
-package-lock.json.bak
-
-# Environment variables and secrets
-.env
-.env.local
-.env.production
-*.pem
-*.key
-*.cert
-*.crt
-ca.pem
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Runtime and OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# IDE files
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Testing and coverage
-coverage/
-.nyc_output/
-
-# Build and temp directories
-dist/
-build/
-tmp/
-temp/
->>>>>>> 6e4f6a3607696cdf45cdcd7903c4e80a0c5f9035

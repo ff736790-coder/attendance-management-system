@@ -1,37 +1,69 @@
-const api="/api/attendance";
-const $=id=>document.getElementById(id);
-$("date").value=new Date().toLocaleDateString("en-CA");
+﻿const form = document.getElementById("attendanceForm");
+const records = document.getElementById("records");
+const message = document.getElementById("message");
+const dateInput = document.getElementById("attendanceDate");
 
-async function load(){
- try{
-  const r=await fetch(api);
-  if(!r.ok)throw Error("Unable to load records");
-  const data=await r.json(), body=$("records");
-  body.replaceChildren();
-  data.forEach(a=>{
-   const tr=document.createElement("tr");
-   [a.studentName,a.rollNumber,a.attendanceDate,a.status].forEach(v=>{
-    const td=document.createElement("td");td.textContent=v??"";tr.appendChild(td);
-   });
-   const td=document.createElement("td"),b=document.createElement("button");
-   b.textContent="Delete";
-   b.onclick=async()=>{
-    const r=await fetch(api+"/"+a.id,{method:"DELETE"});
-    if(r.ok)load();else $("message").textContent="Delete failed";
-   };
-   td.appendChild(b);tr.appendChild(td);body.appendChild(tr);
-  });
- }catch(e){$("message").textContent=e.message;}
+dateInput.value = new Date().toISOString().slice(0, 10);
+
+async function loadRecords() {
+  records.replaceChildren();
+  try {
+    const response = await fetch("/api/attendance");
+    if (!response.ok) throw new Error("Could not load records");
+    const data = await response.json();
+
+    data.forEach(item => {
+      const row = document.createElement("tr");
+      [item.studentName, item.rollNumber, item.attendanceDate, item.status].forEach(value => {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "";
+        row.appendChild(cell);
+      });
+
+      const actionCell = document.createElement("td");
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "Delete";
+      deleteButton.className = "delete";
+      deleteButton.addEventListener("click", async () => {
+        if (!confirm("Delete this attendance record?")) return;
+        const result = await fetch(`/api/attendance/${item.id}`, { method: "DELETE" });
+        if (result.ok) loadRecords();
+        else message.textContent = "Could not delete record.";
+      });
+      actionCell.appendChild(deleteButton);
+      row.appendChild(actionCell);
+      records.appendChild(row);
+    });
+  } catch (error) {
+    message.textContent = "Cannot connect to backend. Check that Spring Boot is running.";
+  }
 }
-$("form").onsubmit=async e=>{
- e.preventDefault();
- try{
-  const r=await fetch(api,{method:"POST",headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({studentName:$("name").value.trim(),rollNumber:$("roll").value.trim(),attendanceDate:$("date").value,status:$("status").value})});
-  if(!r.ok)throw Error("Save failed");
-  $("message").textContent="Attendance saved!";
-  $("form").reset();$("date").value=new Date().toLocaleDateString("en-CA");load();
- }catch(err){$("message").textContent=err.message;}
-};
-$("refresh").onclick=load;
-load();
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  message.textContent = "Saving...";
+  const payload = {
+    studentName: document.getElementById("studentName").value.trim(),
+    rollNumber: document.getElementById("rollNumber").value.trim(),
+    attendanceDate: dateInput.value,
+    status: document.getElementById("status").value
+  };
+
+  try {
+    const response = await fetch("/api/attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error("Save failed");
+    form.reset();
+    dateInput.value = new Date().toISOString().slice(0, 10);
+    message.textContent = "Attendance saved successfully!";
+    await loadRecords();
+  } catch (error) {
+    message.textContent = "Could not save attendance. Check the backend terminal.";
+  }
+});
+
+document.getElementById("refreshButton").addEventListener("click", loadRecords);
+loadRecords();

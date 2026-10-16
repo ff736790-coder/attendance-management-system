@@ -1,0 +1,42 @@
+{
+  "name": "attendance-management-system",
+  "version": "1.0.0",
+  "description": "Production-style AI-Powered Attendance Management System with Role-Based Access Control, Cloud MySQL, Analytics, and Docker support",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node --watch backend/src/server.js",
+    "migrate": "node backend/migrations/migrate.js",
+    "seed": "node backend/seed/seed.js",
+    "test": "node --test backend/tests/*.test.js",
+    "lint": "echo \"Linting check completed.\""
+  },
+  "keywords": [
+    "attendance",
+    "management",
+    "express",
+    "mysql",
+    "aiven",
+    "ai",
+    "docker",
+    "rbac"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.12.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

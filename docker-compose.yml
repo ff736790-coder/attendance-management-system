@@ -1,0 +1,66 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aura-attendance-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=5000
+      - JWT_SECRET=${JWT_SECRET:-super_secure_jwt_secret_key_attendance_system_2026_ams_college}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      # Database connection:
+      # If using external Aiven MySQL, DB_HOST should be your Aiven host and DB_SSL=true
+      # If using local docker-compose mysql service below, DB_HOST=db
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-attendance_user}
+      - DB_PASSWORD=${DB_PASSWORD:-attendance_secret_pass}
+      - DB_NAME=${DB_NAME:-attendance_db}
+      - DB_SSL=${DB_SSL:-false}
+      - DB_SSL_REJECT_UNAUTHORIZED=${DB_SSL_REJECT_UNAUTHORIZED:-false}
+      # AI Provider
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - attendance-network
+
+  # Local Development MySQL Service (Used when external Aiven Cloud MySQL is not targeted)
+  db:
+    image: mysql:8.0
+    container_name: aura-attendance-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: attendance_db
+      MYSQL_USER: attendance_user
+      MYSQL_PASSWORD: attendance_secret_pass
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/migrations/001_create_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/seed/seed_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - attendance-network
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  attendance-network:
+    driver: bridge
